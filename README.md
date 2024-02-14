@@ -7,3 +7,4 @@ This repo is for project ping-pong written on haskell
 3. https://github.com/egonSchiele/actionkid
 4. ссылку на книгу пдф
 
+Я сейчас сделал всё до пункта, где начинается работа с Gloss. Проект можно запустить с команд которые написаны в Main.hs
