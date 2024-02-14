@@ -5,6 +5,6 @@ This repo is for project ping-pong written on haskell
 1. https://andrew.gibiansky.com/blog/haskell/haskell-gloss/#_the_haskell_cabal
 2. https://github.com/haskell-game/fungen#readme
 3. https://github.com/egonSchiele/actionkid
-4. ссылку на книгу пдф
+4. ссылка на книги пдф (https://freecomputerbooks.com/Game-Programming-in-Haskell.html) там в разделе read and download links вторая и третья ссылки на книги по играм на Хаскеле
 
 Я сейчас сделал всё до пункта, где начинается работа с Gloss. Проект можно запустить с команд которые написаны в Main.hs
