@@ -7,6 +7,6 @@ This repo is for project ping-pong written on haskell
 3. https://github.com/egonSchiele/actionkid
 4. ссылка на книги пдф (https://freecomputerbooks.com/Game-Programming-in-Haskell.html) там в разделе read and download links вторая и третья ссылки на книги по играм на Хаскеле
 
-Кружок нарисован, чтобы всё работало надо будет переустановить контейнеры на версию 0.6.7, ведь даже последняя версия глосс не работает с контэйнерами 0.7
+Чтобы всё работало надо будет переустановить контейнеры на версию 0.6.7, ведь даже последняя версия глосс не работает с контэйнерами 0.7
 
 ссылка на фикс проблемы с Unknown GLUT entry glutInit: https://stackoverflow.com/questions/42072958/haskell-with-opengl-unknown-glut-entry-glutinit
