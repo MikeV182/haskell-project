@@ -13,20 +13,41 @@ window = InWindow "Pong" (width, height) (offset, offset)
 background :: Color
 background = black
 
+-- | Data describing the state of the pong game
+data PongGame = Game
+  { ballLoc :: (Float, Float),  -- ^ Pong ball (x, y) location.
+    ballVel :: (Float, Float),  -- ^ Pong ball (x, y) velocity. 
+    player1 :: Float,           -- ^ Left player paddle height.
+                               -- Zero is the middle of the screen. 
+    player2 :: Float           -- ^ Right player paddle height.
+  } deriving Show
+
+-- | The starting state for the game of Pong.
+initialState :: PongGame
+initialState = Game
+  { ballLoc = (-10, 30),
+    ballVel = (1, -3),
+    player1 = 40,
+    player2 = -80
+  }
+
 -- color :: Color -> Picture -> Picture
 -- pictures :: [Picture] -> Picture
 -- translate :: Float -> Float -> Picture -> Picture
-drawing :: Picture
-drawing = pictures [
-    ball red 8,
+-- | Convert a game state into a picture.
+render :: PongGame  -- ^ The game state to render.
+       -> Picture   -- ^ A picture of this game state.
+render game = pictures [
+    ball,
     walls,
-    makeRectangle blue 120 (-20),
-    makeRectangle orange (-120) 40
+    makeRectangle blue 120 $ player1 game,
+    makeRectangle orange (-120) $ player2 game
     ]
     where
         -- ball drawing
-        ball :: Color -> Float -> Picture
-        ball clr rad = translate (-10) 40 $ color clr $ circleSolid rad
+        -- uncurry translate (1,2) Picture <==> translate 1 2 Picture
+        ball = uncurry translate (ballLoc game) $ color ballColor $ circleSolid 8
+        ballColor = dark red
 
         -- walls in window
         wall :: Float -> Picture
@@ -43,6 +64,21 @@ drawing = pictures [
             where
                 mainColor = white
 
+-- | Update the ball position using its current velocity.
+moveBall :: Float    -- ^ The number of seconds since last update
+         -> PongGame -- ^ The initial game state
+         -> PongGame -- ^ A new game state with an updated ball position
+moveBall sec game = game {ballLoc = (x', y')}
+    where
+        (x, y) = ballLoc game
+        (velX, velY) = ballVel game
 
+        x' = x + velX * sec
+        y' = y + velY * sec
+
+-- animate :: Display -> Color -> (Float -> Picture) -> IO ()
 main :: IO ()
-main = display window background drawing
+main = animate window background frame
+    where
+        frame :: Float -> Picture
+        frame sec = render $ moveBall sec initialState
