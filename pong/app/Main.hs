@@ -1,7 +1,10 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use guards" #-}
 module Main(main) where
 
 import Graphics.Gloss
 import Graphics.Gloss.Data.ViewPort
+import Graphics.Gloss.Interface.Pure.Game
 
 
 width, height, offset :: Int
@@ -24,16 +27,22 @@ data PongGame = Game
     ballVel :: (Float, Float),  -- ^ Pong ball (x, y) velocity. 
     player1 :: Float,           -- ^ Left player paddle height.
                                -- Zero is the middle of the screen. 
-    player2 :: Float           -- ^ Right player paddle height.
+    player2 :: Float,           -- ^ Right player paddle height.
+    suspended :: Bool,
+    score1 :: Int,
+    score2 :: Int
   } deriving Show
 
 -- | The starting state for the game of Pong.
 initialState :: PongGame
 initialState = Game
   { ballLoc = (0, 0),
-    ballVel = (30, -30),
+    ballVel = (60, -60),
     player1 = 0,
-    player2 = -80
+    player2 = -80,
+    suspended = True,
+    score1 = 0,
+    score2 = 0
   }
 
 -- color :: Color -> Picture -> Picture
@@ -68,6 +77,11 @@ render game = pictures [
             ]
             where
                 mainColor = white
+                    
+        scoreboard = translate 0 (300 / 2 - 60) $ scale 0.3 0.3 $ color scorecolour $ text scoretext
+        scoretext = if suspended game then (show $ score1 game) ++ " : " ++ (show $ score2 game) else ""
+        scorecolour = red
+        
 
 -- | Update the ball position using its current velocity.
 moveBall :: Float    -- ^ The number of seconds since last update
@@ -79,20 +93,21 @@ moveBall sec game = game {ballLoc = (x', y')}
         (velX, velY) = ballVel game
 
         x' = x + velX * sec
-        y' = y + velY * sec
+        y' = y + velY * sec  
 
 fps :: Int
-fps = 60
+fps = 30
 
 -- | Update the game by moving the ball.
 -- Ignore the ViewPort argument.
-update :: ViewPort -> Float -> PongGame -> PongGame
-update _ sec = paddleBounce . wallBounce . moveBall sec
+update :: Float -> PongGame -> PongGame
+update sec = detectDrop . paddleBounce . wallBounce . moveBall sec
 
 -- animate :: Display -> Color -> (Float -> Picture) -> IO ()
 -- simulate --> https://hackage.haskell.org/package/gloss-1.13.2.2/docs/Graphics-Gloss-Interface-Pure-Simulate.html#v:simulate
+-- play --> https://hackage.haskell.org/package/gloss-1.13.2.2/docs/Graphics-Gloss.html#v:play
 main :: IO ()
-main = simulate window background fps initialState render update
+main = play window background fps initialState render handleKeys update
 
 type Radius = Float
 type PosOfBall = (Float, Float)
@@ -120,7 +135,6 @@ wallBounce game = game { ballVel = (vx, vy') }
             -- Do nothing. Return the old velocity.
             vy
 
-
 paddleBounce :: PongGame -> PongGame
 paddleBounce game = game {ballVel = vel}
     where
@@ -132,7 +146,7 @@ paddleBounce game = game {ballVel = vel}
             else (vx, vy)
         archvy = abs vx * tan (normalAngle + archedAngle)
         normalAngle = atan (vy / abs vx)
-        archedAngle = (y - paddleY) / (85 * 0.7)
+        archedAngle = (y - paddleY) / (85 * 0.2) -- 0.7
 
 paddleCollision :: PongGame -> (Bool, Float)
 paddleCollision game = (leftCollision || rightCollision, hit)
@@ -147,3 +161,18 @@ paddleCollision game = (leftCollision || rightCollision, hit)
                           && ballY < paddleY2 + 85 / 2
                           && ballY > paddleY2 - 85 / 2
         hit = if leftCollision then paddleY1 else paddleY2
+
+handleKeys :: Event -> PongGame -> PongGame
+handleKeys (EventKey (Char 'r') _ _ _) game = game {ballLoc = (0,0), ballVel = (60,-60)}
+handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = False} else game
+handleKeys _ game = game
+
+detectDrop :: PongGame -> PongGame
+detectDrop game = if x > 300 / 2 - ballRadius && not susp
+                  then game { score1 = 1 + score1 game , suspended = True }
+                  else if x < 300 / (-2) + ballRadius && not susp
+                    then game { score2 = 1 + score2 game , suspended = True }
+                  else game
+                  where 
+                    susp = suspended game
+                    (x, _) = ballLoc game
