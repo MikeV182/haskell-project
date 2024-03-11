@@ -15,6 +15,11 @@ offset = 100
 ballRadius :: Float
 ballRadius = 10
 
+paddleVelocity::Float
+paddleVelocity = 150
+
+data Movement = MovUp | MovDown | Stop deriving (Eq, Show)
+
 window :: Display
 window = InWindow "Pong" (width, height) (offset, offset)
 
@@ -25,9 +30,8 @@ background = black
 data PongGame = Game
   { ballLoc :: (Float, Float),  -- ^ Pong ball (x, y) location.
     ballVel :: (Float, Float),  -- ^ Pong ball (x, y) velocity. 
-    player1 :: Float,           -- ^ Left player paddle height.
-                               -- Zero is the middle of the screen. 
-    player2 :: Float,           -- ^ Right player paddle height.
+    player1 :: (Float, Movement),           -- ^ Left player paddle height.
+    player2 :: (Float, Movement),           -- ^ Right player paddle height.
     suspended :: Bool,
     score1 :: Int,
     score2 :: Int
@@ -38,9 +42,9 @@ initialState :: PongGame
 initialState = Game
   { ballLoc = (0, 0),
     ballVel = (60, -60),
-    player1 = 0,
-    player2 = -80,
-    suspended = True,
+    player1 = (0, Stop),
+    player2 = (-80, Stop),
+    suspended = False,
     score1 = 0,
     score2 = 0
   }
@@ -54,8 +58,9 @@ render :: PongGame  -- ^ The game state to render.
 render game = pictures [
     ball,
     walls,
-    makeRectangle blue 120 $ player2 game,
-    makeRectangle orange (-120) $ player1 game
+    makeRectangle blue 120 $ fst $ player2 game,
+    makeRectangle orange (-120) $ fst $ player1 game,
+    scoreboard
     ]
     where
         -- ball drawing
@@ -78,10 +83,9 @@ render game = pictures [
             where
                 mainColor = white
                     
-        scoreboard = translate 0 (300 / 2 - 60) $ scale 0.3 0.3 $ color scorecolour $ text scoretext
+        scoreboard = translate (-50) (300 / 2 - 60) $ scale 0.3 0.3 $ color scorecolour $ text scoretext
         scoretext = if suspended game then (show $ score1 game) ++ " : " ++ (show $ score2 game) else ""
         scorecolour = red
-        
 
 -- | Update the ball position using its current velocity.
 moveBall :: Float    -- ^ The number of seconds since last update
@@ -95,13 +99,30 @@ moveBall sec game = game {ballLoc = (x', y')}
         x' = x + velX * sec
         y' = y + velY * sec  
 
+movePaddles :: Float -> PongGame -> PongGame
+movePaddles sec game = game { player1 = pl1, player2 = pl2}
+      where
+        pl1 = movePaddle sec ( player1 game )
+        pl2 = movePaddle sec ( player2 game )
+
+        movePaddle :: Float -> (Float, Movement) -> (Float, Movement)
+        movePaddle sec (y, dir)  
+          | dir == MovUp = let newy = y + sec * paddleVelocity in 
+            if newy < 300 / 2 - 85 / 2 - 150 then (newy, dir) else (y, dir)
+          | dir == MovDown = let newy = y - sec * paddleVelocity in 
+            if newy > 300 / (-2) + 85 / 2 + 150 then (newy, dir) else (y, dir)
+          | otherwise = (y, dir)
+
+moveThings :: Float -> PongGame -> PongGame
+moveThings sec = moveBall sec . movePaddles sec
+
 fps :: Int
 fps = 30
 
 -- | Update the game by moving the ball.
 -- Ignore the ViewPort argument.
 update :: Float -> PongGame -> PongGame
-update sec = detectDrop . paddleBounce . wallBounce . moveBall sec
+update sec = detectDrop . paddleBounce . wallBounce . moveThings sec
 
 -- animate :: Display -> Color -> (Float -> Picture) -> IO ()
 -- simulate --> https://hackage.haskell.org/package/gloss-1.13.2.2/docs/Graphics-Gloss-Interface-Pure-Simulate.html#v:simulate
@@ -152,8 +173,8 @@ paddleCollision :: PongGame -> (Bool, Float)
 paddleCollision game = (leftCollision || rightCollision, hit)
     where
         (ballX, ballY) = ballLoc game
-        paddleY1 = player1 game
-        paddleY2 = player2 game
+        paddleY1 = fst $ player1 game
+        paddleY2 = fst $ player2 game
         leftCollision =   ballX < 300 / (-2) + 1.5 * 25 + ballRadius
                           && ballY < paddleY1 + 85 / 2
                           && ballY > paddleY1 - 85 / 2
@@ -164,7 +185,8 @@ paddleCollision game = (leftCollision || rightCollision, hit)
 
 handleKeys :: Event -> PongGame -> PongGame
 handleKeys (EventKey (Char 'r') _ _ _) game = game {ballLoc = (0,0), ballVel = (60,-60)}
-handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = False} else game
+handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = not (suspended game)} else game
+handleKeys (EventKey (Char 'w') _ _ _) game = undefined
 handleKeys _ game = game
 
 detectDrop :: PongGame -> PongGame
