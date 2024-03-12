@@ -108,9 +108,9 @@ movePaddles sec game = game { player1 = pl1, player2 = pl2}
         movePaddle :: Float -> (Float, Movement) -> (Float, Movement)
         movePaddle sec (y, dir)  
           | dir == MovUp = let newy = y + sec * paddleVelocity in 
-            if newy < 300 / 2 - 85 / 2 - 150 then (newy, dir) else (y, dir)
+            if newy < 300 / 2 - 85 / 2 - 10 then (newy, dir) else (y, dir)
           | dir == MovDown = let newy = y - sec * paddleVelocity in 
-            if newy > 300 / (-2) + 85 / 2 + 150 then (newy, dir) else (y, dir)
+            if newy > 300 / (-2) + 85 / 2 + 10 then (newy, dir) else (y, dir)
           | otherwise = (y, dir)
 
 moveThings :: Float -> PongGame -> PongGame
@@ -186,7 +186,14 @@ paddleCollision game = (leftCollision || rightCollision, hit)
 handleKeys :: Event -> PongGame -> PongGame
 handleKeys (EventKey (Char 'r') _ _ _) game = game {ballLoc = (0,0), ballVel = (60,-60)}
 handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = not (suspended game)} else game
-handleKeys (EventKey (Char 'w') _ _ _) game = undefined
+handleKeys (EventKey (Char 'w') Down _ _) game = game { player1 = (y, MovUp  ) } where y = fst $ player1 game
+handleKeys (EventKey (Char 'w') Up _ _)   game = game { player1 = (y, Stop  ) } where y = fst $ player1 game
+handleKeys (EventKey (Char 's') Down _ _) game = game { player1 = (y, MovDown) } where y = fst $ player1 game
+handleKeys (EventKey (Char 's') Up _ _)   game = game { player1 = (y, Stop  ) } where y = fst $ player1 game
+handleKeys (EventKey (SpecialKey KeyUp) Down _ _)   game = game { player2 = (y, MovUp  ) } where y = fst $ player2 game 
+handleKeys (EventKey (SpecialKey KeyUp) Up _ _)     game = game { player2 = (y, Stop  ) } where y = fst $ player2 game
+handleKeys (EventKey (SpecialKey KeyDown) Down _ _) game = game { player2 = (y, MovDown) } where y = fst $ player2 game
+handleKeys (EventKey (SpecialKey KeyDown) Up _ _)   game = game { player2 = (y, Stop  ) } where y = fst $ player2 game
 handleKeys _ game = game
 
 detectDrop :: PongGame -> PongGame
