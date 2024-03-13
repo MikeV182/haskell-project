@@ -167,7 +167,7 @@ paddleBounce game = game {ballVel = vel}
             else (vx, vy)
         archvy = abs vx * tan (normalAngle + archedAngle)
         normalAngle = atan (vy / abs vx)
-        archedAngle = (y - paddleY) / (85 * 0.2) -- 0.7
+        archedAngle = (y - paddleY) / (85 * 0.7)
 
 paddleCollision :: PongGame -> (Bool, Float)
 paddleCollision game = (leftCollision || rightCollision, hit)
