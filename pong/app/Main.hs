@@ -44,7 +44,7 @@ initialState = Game
     ballVel = (60, -60),
     player1 = (0, Stop),
     player2 = (-80, Stop),
-    suspended = False,
+    suspended = True,
     score1 = 0,
     score2 = 0
   }
@@ -117,7 +117,7 @@ moveThings :: Float -> PongGame -> PongGame
 moveThings sec = moveBall sec . movePaddles sec
 
 fps :: Int
-fps = 30
+fps = 60
 
 -- | Update the game by moving the ball.
 -- Ignore the ViewPort argument.
@@ -184,8 +184,8 @@ paddleCollision game = (leftCollision || rightCollision, hit)
         hit = if leftCollision then paddleY1 else paddleY2
 
 handleKeys :: Event -> PongGame -> PongGame
-handleKeys (EventKey (Char 'r') _ _ _) game = game {ballLoc = (0,0), ballVel = (60,-60)}
-handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = not (suspended game)} else game
+handleKeys (EventKey (Char 'r') _ _ _) game = if suspended game then startNewGame game else game
+--handleKeys (EventKey (Char 'p') _ _ _) game = if suspended game then game {ballVel = (0,0), suspended = not (suspended game)} else game
 handleKeys (EventKey (Char 'w') Down _ _) game = game { player1 = (y, MovUp  ) } where y = fst $ player1 game
 handleKeys (EventKey (Char 'w') Up _ _)   game = game { player1 = (y, Stop  ) } where y = fst $ player1 game
 handleKeys (EventKey (Char 's') Down _ _) game = game { player1 = (y, MovDown) } where y = fst $ player1 game
@@ -195,6 +195,14 @@ handleKeys (EventKey (SpecialKey KeyUp) Up _ _)     game = game { player2 = (y, 
 handleKeys (EventKey (SpecialKey KeyDown) Down _ _) game = game { player2 = (y, MovDown) } where y = fst $ player2 game
 handleKeys (EventKey (SpecialKey KeyDown) Up _ _)   game = game { player2 = (y, Stop  ) } where y = fst $ player2 game
 handleKeys _ game = game
+
+startNewGame :: PongGame -> PongGame
+startNewGame game = game
+  { 
+    ballLoc = (0, 0),
+    ballVel = (60, -60),
+    suspended = False
+  }
 
 detectDrop :: PongGame -> PongGame
 detectDrop game = if x > 300 / 2 - ballRadius && not susp
